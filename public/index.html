@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shollu Auto-Bot Manager</title>
+  <meta name="description" content="Dashboard manajemen bot otomatisasi absensi sholat - Multi Account Manager">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕌</text></svg>">
+</head>
+
+<body class="auth-hidden">
+
+  <!-- AUTH OVERLAY -->
+  <div id="authOverlay" class="auth-overlay">
+    <button class="theme-toggle-btn auth-theme-toggle" onclick="toggleTheme()" title="Light/Dark Mode"
+      id="authThemeBtn">🌙</button>
+    <div class="auth-card">
+      <div class="auth-logo">🕌</div>
+      <div class="auth-title">
+        <h2>Shollu Auto-Bot</h2>
+        <p>Dashboard Access Control</p>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="auth-form">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="loginUser" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPass" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Login</button>
+        <div class="auth-switch">
+          Belum punya akun? <a href="#" onclick="showAuth('register')">Daftar sekarang</a>
+        </div>
+      </form>
+
+      <!-- Register Form -->
+      <form id="registerForm" class="auth-form" style="display: none;">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="regUser" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="regPass" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Daftar</button>
+        <div class="auth-switch">
+          Sudah punya akun? <a href="#" onclick="showAuth('login')">Kembali ke Login</a>
+        </div>
+        <p class="auth-note">Note: Registrasi memerlukan persetujuan manual oleh admin.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <span class="logo">🕌</span>
+        <div class="header-title">
+          <h1>Shollu Auto-Bot</h1>
+          <p>Multi-Account Manager v1.0</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-time" id="headerTime">
+          <span id="clockDisplay">--:--:--</span>
+          <span class="prayer-label" id="currentPrayerLabel"></span>
+        </div>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" title="Light/Dark Mode" id="headerThemeBtn">🌙</button>
+        <button class="btn btn-outline" onclick="logout()">
+          <span>🚪 Logout</span>
+        </button>
+        <button class="btn kill-switch" id="killSwitch" onclick="toggleAllBots()">
+          ⛔ Nonaktifkan Semua
+        </button>
+        <button class="btn btn-primary" onclick="openAddAccountModal()">
+          ➕ Tambah Akun
+        </button>
+        <button class="btn btn-outline burger-btn" id="burgerBtn" onclick="toggleSidebar()">
+          <span class="burger-icon">☰</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div class="container">
+    <!-- PRAYER STATUS BAR -->
+    <div class="status-bar">
+      <div class="prayer-status-grid" id="prayerStatusGrid">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <!-- ACCOUNTS (Full Width) -->
+    <div class="accounts-section">
+      <h2>
+        🤖 Bot Accounts
+        <span class="account-count" id="accountCount">0</span>
+      </h2>
+      <div class="accounts-grid" id="accountsGrid">
+        <div class="empty-state">
+          <div class="emoji">🕌</div>
+          <p>Belum ada akun. Klik "Tambah Akun" untuk mulai.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- SLIDE-OUT SIDEBAR -->
+  <div class="sidebar-drawer" id="sidebarDrawer">
+    <div class="sidebar-drawer-header">
+      <h2>⚙️ Panel</h2>
+      <button class="btn btn-outline btn-sm" onclick="closeSidebar()">✕</button>
+    </div>
+
+    <!-- Sidebar Tabs -->
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" data-tab="logs" onclick="switchSidebarTab('logs')">📋 Log</button>
+      <button class="sidebar-tab" data-tab="scheduler" onclick="switchSidebarTab('scheduler')">⚡ Scheduler</button>
+      <button class="sidebar-tab" data-tab="prayer-settings" onclick="switchSidebarTab('prayer-settings')">🕐 Waktu
+        Sholat</button>
+    </div>
+
+    <!-- Tab: Logs -->
+    <div class="sidebar-tab-content active" id="tabLogs">
+      <div class="sidebar-tab-toolbar">
+        <button class="btn btn-outline btn-sm" onclick="refreshLogs()">↻ Refresh</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllLogs()">🗑️ Hapus Semua</button>
+      </div>
+      <div class="sidebar-tab-body" id="logsContainer">
+        <div class="empty-state">
+          <div class="emoji">📋</div>
+          <p>Belum ada log absensi.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Scheduler -->
+    <div class="sidebar-tab-content" id="tabScheduler">
+      <div class="sidebar-tab-body" id="schedulerInfo">
+        <div class="empty-state">
+          <p>Memuat status...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Prayer Settings -->
+    <div class="sidebar-tab-content" id="tabPrayerSettings">
+      <div class="sidebar-tab-body" id="prayerSettingsContainer">
+        <div class="empty-state">
+          <p>Memuat pengaturan...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD ACCOUNT MODAL -->
+  <div class="modal-overlay" id="addAccountModal">
+    <div class="modal">
+      <h2>➕ Tambah Akun Baru</h2>
+      <div class="form-group">
+        <label>Username / No. HP</label>
+        <input type="text" id="newUsername" placeholder="083xxxxxxxxx">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="newPassword" placeholder="Password akun Shollu">
+      </div>
+      <div class="form-group">
+        <label>Mesin ID</label>
+        <input type="text" id="newMesinId" placeholder="1101932" value="1101932">
+        <p class="form-hint">ID Mesin (Default: 1101932)</p>
+      </div>
+      <div class="form-group">
+        <label>API Key</label>
+        <input type="text" id="newApiKey" placeholder="shollusemakindidepan" value="shollusemakindidepan">
+        <p class="form-hint">Biarkan default jika tidak ada perubahan</p>
+      </div>
+      <div class="form-group">
+        <label>Kode Absen</label>
+        <input type="text" id="newAbsenCode" placeholder="Contoh: 69907c2c98057">
+        <p class="form-hint">Kode absen pertama (bisa tambah lagi nanti)</p>
+      </div>
+      <div class="form-group">
+        <label>Nama Pemilik Kode (Opsional)</label>
+        <input type="text" id="newCodeLabel" placeholder="Contoh: Ahmad, Budi, dll">
+        <p class="form-hint">Nama orang yang diabsenkan</p>
+      </div>
+      <div id="loginStatusResult" style="display:none;"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('addAccountModal')">Batal</button>
+        <button class="btn btn-success" id="btnSaveAccount" onclick="saveNewAccount()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT ACCOUNT MODAL -->
+  <div class="modal-overlay" id="editAccountModal">
+    <div class="modal">
+      <h2>✏️ Edit Akun</h2>
+      <input type="hidden" id="editAccountId">
+      <div class="form-group">
+        <label>Username / No. HP</label>
+        <input type="text" id="editUsername">
+      </div>
+      <div class="form-group">
+        <label>Password (kosongkan jika tidak ingin ubah)</label>
+        <input type="password" id="editPassword" placeholder="Biarkan kosong jika tidak ingin ubah">
+      </div>
+      <div class="form-group">
+        <label>Mesin ID</label>
+        <input type="text" id="editMesinId">
+      </div>
+      <div class="form-group">
+        <label>API Key</label>
+        <input type="text" id="editApiKey">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('editAccountModal')">Batal</button>
+        <button class="btn btn-success" onclick="saveEditAccount()">💾 Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD CODE MODAL -->
+  <div class="modal-overlay" id="addCodeModal">
+    <div class="modal">
+      <h2>🔑 Tambah Kode Absen</h2>
+      <input type="hidden" id="addCodeAccountId">
+      <div class="form-group">
+        <label>Kode Absen</label>
+        <input type="text" id="addCodeValue" placeholder="Masukkan kode absen">
+      </div>
+      <div class="form-group">
+        <label>Nama Pemilik Kode (Opsional)</label>
+        <input type="text" id="addCodeLabel" placeholder="Contoh: Ahmad, Budi, dll">
+        <p class="form-hint">Nama orang yang diabsenkan</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('addCodeModal')">Batal</button>
+        <button class="btn btn-success" onclick="saveNewCode()">💾 Tambah</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL ABSEN MODAL -->
+  <div class="modal-overlay" id="manualAbsenModal">
+    <div class="modal">
+      <h2>🕌 Absen Manual</h2>
+      <input type="hidden" id="manualAbsenAccountId">
+
+      <!-- Form View -->
+      <div id="manualAbsenForm">
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 16px 24px;">
+          Kirim absen manual ke server Shollu. Waktu sholat akan otomatis disesuaikan. Request dikirim dengan delay
+          natural untuk keamanan.
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeModal('manualAbsenModal')">Batal</button>
+          <button class="btn btn-success" id="btnManualAbsen" onclick="executeManualAbsen()">📤 Kirim Absen
+            Sekarang</button>
+        </div>
+      </div>
+
+      <!-- Progress View -->
+      <div id="manualAbsenProgress" style="display: none;">
+        <div class="progress-container">
+          <div class="progress-header">
+            <span class="progress-title" id="progressTitle">Mengirim absen...</span>
+            <span class="progress-count" id="progressCount">0/0</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+          </div>
+          <div class="progress-results" id="progressResults"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" id="btnCloseProgress" onclick="closeManualAbsenProgress()"
+            style="display: none;">✓ Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="antigravity-bg.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

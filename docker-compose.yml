@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  bot_absen:
+    build: .
+    container_name: bot_absen
+    ports:
+      - "8355:8355"
+    restart: always
+    environment:
+      DB_HOST: bot_mysql
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: shollu_db
+      SESSION_SECRET: shollu-bot-session-secret-ganti-ini
+      ENCRYPTION_KEY: shollu-bot-encryption-key-ganti-ini
+    depends_on:
+      bot_mysql:
+        condition: service_healthy
+    networks:
+      - bot_network
+
+  bot_mysql:
+    image: mysql:8.0
+    container_name: bot_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mysqluser
+      MYSQL_DATABASE: mysqlpass
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - bot_db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - bot_network
+
+volumes:
+  bot_db_data:
+
+
+networks:
+  bot_network:
+    driver: bridge
